@@ -25,6 +25,9 @@ const {updateThresholds} = require('jest-coverage-processor');
 
 module.exports = function (results) {
    return updateThresholds(results, {
-       packagePath,thresholdPrecision: 2, });
+       packagePath,
+       thresholdPrecision: 2, // optional, default: 2
+       outputSpaces: '  ' // optional, default: 2 spaces, '  '
+   });
 };
 ```
