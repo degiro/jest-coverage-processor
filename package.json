@@ -1,0 +1,21 @@
+{
+  "name": "jest-coverage-processor",
+  "version": "1.0.0",
+  "description": "Utils for working with Jest coverage data (auto update thresholds, etc.)",
+  "main": "index.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/degiro/jest-coverage-processor.git"
+  },
+  "keywords": [
+    "Jest",
+    "thresholds",
+    "auto-update"
+  ],
+  "author": "degiro",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/degiro/jest-coverage-processor/issues"
+  },
+  "homepage": "https://github.com/degiro/jest-coverage-processor#readme"
+}

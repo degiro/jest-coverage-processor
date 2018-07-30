@@ -24,6 +24,7 @@ jest: {
 const {updateThresholds} = require('jest-coverage-processor');
 
 module.exports = function (results) {
-   return updateThresholds(results);
+   return updateThresholds(results, {
+       packagePath,thresholdPrecision: 2, });
 };
 ```
