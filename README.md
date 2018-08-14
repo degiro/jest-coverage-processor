@@ -21,11 +21,12 @@ jest: {
 
 ```js
 // <rootDir>/test-results-processor.js
+const path = require('path');
 const {updateThresholds} = require('jest-coverage-processor');
 
 module.exports = function (results) {
    return updateThresholds(results, {
-       packagePath,
+       packagePath: path.resolve(__dirname, '../package.json'),
        thresholdPrecision: 2, // optional, default: 2
        outputSpaces: '  ' // optional, default: 2 spaces, '  '
    });
