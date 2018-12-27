@@ -41,7 +41,7 @@ module.exports = function updateThresholds (jestResults, options) {
              */
             const multiplier = Math.pow(10, thresholdPrecision);
             const coveragePercentage =
-                Math.round(100 * multiplier * coverageData.covered / coverageData.total) / multiplier;
+                Math.floor(100 * multiplier * coverageData.covered / coverageData.total) / multiplier;
             const threshold = Math.abs(thresholds[coverageMetric] || 0);
 
             // save new coverage threshold if it increased
