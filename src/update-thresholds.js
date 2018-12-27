@@ -22,10 +22,17 @@ module.exports = function updateThresholds (jestResults, options) {
             jestConfig.coverageThreshold = {};
         }
 
-        packageInfo.jest = jestConfig;
-        const {coverageThreshold} = jestConfig;
+        if (!jestConfig.coverageThreshold.global) {
+            jestConfig.coverageThreshold .global = {
+                statements: 0,
+                branches: 0,
+                functions: 0,
+                lines: 0
+            };
+        }
+
         const actualCoverage = coverageMap.getCoverageSummary().toJSON();
-        const thresholds = coverageThreshold.global || {};
+        const thresholds = jestConfig.coverageThreshold.global;
 
         [
             'statements',
@@ -46,14 +53,11 @@ module.exports = function updateThresholds (jestResults, options) {
 
             // save new coverage threshold if it increased
             if (coveragePercentage > threshold) {
-                Object.assign(coverageThreshold, {
-                    global: Object.assign({}, coverageThreshold.global, {
-                        [coverageMetric]: coveragePercentage
-                    })
-                });
+                thresholds[coverageMetric] = coveragePercentage;
             }
         });
 
+        packageInfo.jest = jestConfig;
         writeFileSync(packagePath, JSON.stringify(packageInfo, null, outputSpaces));
     }
 

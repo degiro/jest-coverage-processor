@@ -1,8 +1,11 @@
 {
   "name": "jest-coverage-processor",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Utils for working with Jest coverage data (auto update thresholds, etc.)",
-  "main": "index.js",
+  "main": "src/update-thresholds.js",
+  "scripts": {
+    "test": "jest"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/degiro/jest-coverage-processor.git"
@@ -17,5 +20,18 @@
   "bugs": {
     "url": "https://github.com/degiro/jest-coverage-processor/issues"
   },
-  "homepage": "https://github.com/degiro/jest-coverage-processor#readme"
+  "homepage": "https://github.com/degiro/jest-coverage-processor#readme",
+  "devDependencies": {
+    "jest": "^23.6.0"
+  },
+  "jest": {
+    "collectCoverage": true,
+    "coverageDirectory": "coverage",
+    "coverageReporters": [
+      "lcov"
+    ],
+    "collectCoverageFrom": [
+      "src/*.js"
+    ]
+  }
 }
