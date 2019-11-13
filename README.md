@@ -10,11 +10,11 @@ npm i jest-coverage-processor --save-dev
 * Update your Jest config:
 
 ```js
-// package.json
-jest: {
+// jest.config.js
+module.exports = {
   // ...
-  "testResultsProcessor": "<rootDir>/test-results-processor.js"
-}
+  testResultsProcessor: '<rootDir>/test-results-processor.js'
+};
 ```
 
 * Add a test processor script:
@@ -26,9 +26,8 @@ const {updateThresholds} = require('jest-coverage-processor');
 
 module.exports = function (results) {
    return updateThresholds(results, {
-       packagePath: path.resolve(__dirname, './package.json'),
-       thresholdPrecision: 2, // optional, default: 2
-       outputSpaces: '  ' // optional, default: 2 spaces, '  '
+       configPath: path.resolve(__dirname, './jest.config.js'),
+       outputSpaces: '  ' // optional, default: 4 spaces, '    '
    });
 };
 ```

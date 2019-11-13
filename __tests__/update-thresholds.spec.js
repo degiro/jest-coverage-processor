@@ -1,15 +1,12 @@
 jest.mock('fs');
-const {writeFileSync, readFileSync} = require('fs');
+const {writeFileSync} = require('fs');
 const updateThresholds = require('../src/update-thresholds');
 
 describe('updateThresholds()', () => {
-    afterEach(() => {
-        readFileSync.mockClear();
-        writeFileSync.mockClear();
-    });
-
-    afterAll(() => {
+    beforeEach(() => {
         jest.resetModules();
+        jest.mock('../jest.config.js', () => ({}));
+        writeFileSync.mockClear();
     });
 
     it('should check if coverageMap is available', () => {
@@ -17,110 +14,96 @@ describe('updateThresholds()', () => {
         const result = updateThresholds(jestResults, {});
 
         expect(result).toBe(jestResults);
-        expect(readFileSync).toHaveBeenCalledTimes(0);
         expect(writeFileSync).toHaveBeenCalledTimes(0);
     });
 
     it('should init global coverage thresholds if they are missing', () => {
         const jestResults = {
+            success: true,
             coverageMap: {
                 getCoverageSummary: () => ({
                     toJSON: () => ({
                         statements: {
-                            covered: 6,
-                            total: 22
+                            pct: 27.27
                         },
                         branches: {
-                            covered: 3,
-                            total: 14
+                            pct: 21.42
                         },
                         functions: {
-                            covered: 1,
-                            total: 2
+                            pct: 50
                         },
                         lines: {
-                            covered: 6,
-                            total: 19
+                            pct: 31.57
                         }
                     })
                 })
             }
         };
 
-        readFileSync.mockImplementationOnce(() => '{}');
         updateThresholds(jestResults, {
-            packagePath: '../package.json'
+            configPath: '../jest.config.js'
         });
-
-        expect(readFileSync).toHaveBeenLastCalledWith('../package.json', 'utf8');
-        expect(writeFileSync).toHaveBeenLastCalledWith('../package.json', JSON.stringify({
-            jest: {
-                coverageThreshold: {
-                    global: {
-                        statements: 27.27,
-                        branches: 21.42,
-                        functions: 50,
-                        lines: 31.57
-                    }
+        const configSrc = JSON.stringify({
+            coverageThreshold: {
+                global: {
+                    statements: 27.27,
+                    branches: 21.42,
+                    functions: 50,
+                    lines: 31.57
                 }
             }
-        }, null, 2));
+        }, null, 4);
+
+        expect(writeFileSync).toHaveBeenLastCalledWith('../jest.config.js', `module.exports = ${configSrc};`);
     });
 
     it('should update global coverage thresholds', () => {
         const jestResults = {
+            success: true,
             coverageMap: {
                 getCoverageSummary: () => ({
                     toJSON: () => ({
                         statements: {
-                            covered: 6,
-                            total: 22
+                            pct: 30
                         },
                         branches: {
-                            covered: 7,
-                            total: 14
+                            pct: 20
                         },
                         functions: {
-                            covered: 0,
-                            total: 2
+                            pct: 50
                         },
                         lines: {
-                            covered: 11,
-                            total: 19
+                            pct: 40
                         }
                     })
                 })
             }
         };
 
-        readFileSync.mockImplementationOnce(() => JSON.stringify({
-            jest: {
-                coverageThreshold: {
-                    global: {
-                        statements: 27.27,
-                        branches: 21.42,
-                        functions: 50,
-                        lines: 31.57
-                    }
+        jest.mock('../jest.config.js', () => ({
+            coverageThreshold: {
+                global: {
+                    statements: 20,
+                    branches: 50,
+                    functions: 40,
+                    lines: 30
                 }
             }
-        }, null, 2));
+        }));
         updateThresholds(jestResults, {
-            packagePath: '../package.json'
+            configPath: '../jest.config.js'
         });
-
-        expect(readFileSync).toHaveBeenLastCalledWith('../package.json', 'utf8');
-        expect(writeFileSync).toHaveBeenLastCalledWith('../package.json', JSON.stringify({
-            jest: {
-                coverageThreshold: {
-                    global: {
-                        statements: 27.27,
-                        branches: 50,
-                        functions: 50,
-                        lines: 57.89
-                    }
+        const configSrc = JSON.stringify({
+            coverageThreshold: {
+                global: {
+                    statements: 30,
+                    branches: 50,
+                    functions: 50,
+                    lines: 40
                 }
             }
-        }, null, 2));
+        }, null, 4);
+
+        expect(writeFileSync).toHaveBeenLastCalledWith('../jest.config.js', `module.exports = ${configSrc};`);
     });
 });

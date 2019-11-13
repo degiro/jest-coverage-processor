@@ -1,4 +1,4 @@
-const {writeFileSync, readFileSync} = require('fs');
+const {writeFileSync} = require('fs');
 
 /**
  * @description Update test coverage thresholds. https://github.com/facebook/jest/issues/3710
@@ -7,59 +7,50 @@ const {writeFileSync, readFileSync} = require('fs');
  */
 module.exports = function updateThresholds (jestResults, options) {
     const {coverageMap} = jestResults;
-    const {packagePath, thresholdPrecision = 2, outputSpaces = '  '} = options;
 
-    // check if coverage is enabled
-    if (coverageMap) {
-        /**
-         * @description Do not use require(), because it adds rootDir variable to JEST config
-         * @type {any}
-         */
-        const packageInfo = JSON.parse(readFileSync(packagePath, 'utf8'));
-        const jestConfig = packageInfo.jest || {};
-
-        if (!jestConfig.coverageThreshold) {
-            jestConfig.coverageThreshold = {};
-        }
-
-        if (!jestConfig.coverageThreshold.global) {
-            jestConfig.coverageThreshold .global = {
-                statements: 0,
-                branches: 0,
-                functions: 0,
-                lines: 0
-            };
-        }
-
-        const actualCoverage = coverageMap.getCoverageSummary().toJSON();
-        const thresholds = jestConfig.coverageThreshold.global;
-
-        [
-            'statements',
-            'branches',
-            'functions',
-            'lines'
-        ].forEach((coverageMetric) => {
-            const coverageData = actualCoverage[coverageMetric];
-
-            /**
-             * @description Round percents
-             * @type {number}
-             */
-            const multiplier = Math.pow(10, thresholdPrecision);
-            const coveragePercentage =
-                Math.floor(100 * multiplier * coverageData.covered / coverageData.total) / multiplier;
-            const threshold = Math.abs(thresholds[coverageMetric] || 0);
-
-            // save new coverage threshold if it increased
-            if (coveragePercentage > threshold) {
-                thresholds[coverageMetric] = coveragePercentage;
-            }
-        });
-
-        packageInfo.jest = jestConfig;
-        writeFileSync(packagePath, JSON.stringify(packageInfo, null, outputSpaces));
+    // 1. update thresholds only after successful run
+    // 2. check if coverage is enabled
+    if (!jestResults.success || !coverageMap) {
+        return jestResults;
     }
+    const {configPath, outputSpaces = '    '} = options;
+    const jestConfig = require(configPath);
+    const metrics = [
+        'statements',
+        'branches',
+        'functions',
+        'lines'
+    ];
+
+    if (!jestConfig.coverageThreshold) {
+        jestConfig.coverageThreshold = {};
+    }
+
+    if (!jestConfig.coverageThreshold.global) {
+        jestConfig.coverageThreshold.global = metrics.reduce((thresholds, coverageMetric) => {
+            thresholds[coverageMetric] = 0;
+            return thresholds;
+        }, {});
+    }
+
+    const actualCoverage = coverageMap.getCoverageSummary().toJSON();
+    const thresholds = jestConfig.coverageThreshold.global;
+
+    metrics.forEach((coverageMetric) => {
+        const coverageData = actualCoverage[coverageMetric];
+        const coveragePercentage = coverageData.pct || 0;
+        const threshold = thresholds[coverageMetric] || 0;
+
+        // save new coverage threshold if it increased
+        if (coveragePercentage > threshold) {
+            thresholds[coverageMetric] = coveragePercentage;
+        }
+    });
+
+    // it's added by require() call
+    delete jestConfig.rootDir;
+
+    writeFileSync(configPath, `module.exports = ${JSON.stringify(jestConfig, null, outputSpaces)};`);
 
     return jestResults;
 };
