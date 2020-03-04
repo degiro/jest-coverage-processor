@@ -1,9 +1,45 @@
-const {writeFileSync} = require('fs');
+const {writeFileSync, readFileSync} = require('fs');
+
+function updateJestConfigFile ({jestConfigPath, jestConfig, outputSpaces}) {
+    const jestConfigSource = readFileSync(jestConfigPath, 'utf8');
+    const {index: coverageThresholdStart} = /coverageThreshold\s*:/.exec(jestConfigSource) || {index: -1};
+    let coverageThresholdEnd = coverageThresholdStart;
+    let openedBracketsCount;
+
+    for (; coverageThresholdEnd < jestConfigSource.length; coverageThresholdEnd++) {
+        const char = jestConfigSource[coverageThresholdEnd];
+
+        if (char === '{') {
+            openedBracketsCount = (openedBracketsCount || 0) + 1;
+        } else if (char === '}') {
+            openedBracketsCount = (openedBracketsCount || 0) - 1;
+        }
+
+        if (openedBracketsCount === 0) {
+            break;
+        }
+    }
+
+    if (coverageThresholdStart === -1 || coverageThresholdEnd === jestConfigSource.length) {
+        throw new Error(`coverageThreshold section could not be updated in ${jestConfigPath}`);
+    }
+    const coverageThresholdJson = JSON.stringify(jestConfig.coverageThreshold, null, outputSpaces);
+    const updatedJestConfigSource = [
+        jestConfigSource.slice(0, coverageThresholdStart),
+        `coverageThreshold: ${coverageThresholdJson}`,
+        jestConfigSource.slice(coverageThresholdEnd + 1)
+    ].join('');
+
+    writeFileSync(jestConfigPath, updatedJestConfigSource);
+}
 
 /**
  * @description Update test coverage thresholds. https://github.com/facebook/jest/issues/3710
- * @param {*} jestResults
- * @returns {*}
+ * @param {object} jestResults
+ * @param {object} options
+ * @param {string} options.configPath
+ * @param {string|number} [options.outputSpaces]
+ * @returns {object}
  */
 module.exports = function updateThresholds (jestResults, options) {
     const {coverageMap} = jestResults;
@@ -13,8 +49,9 @@ module.exports = function updateThresholds (jestResults, options) {
     if (!jestResults.success || !coverageMap) {
         return jestResults;
     }
-    const {configPath, outputSpaces = '    '} = options;
-    const jestConfig = require(configPath);
+    const {outputSpaces = 4} = options;
+    const jestConfigPath = require.resolve(options.configPath);
+    const jestConfig = require(jestConfigPath);
     const metrics = [
         'statements',
         'branches',
@@ -23,7 +60,7 @@ module.exports = function updateThresholds (jestResults, options) {
     ];
 
     if (!jestConfig.coverageThreshold) {
-        jestConfig.coverageThreshold = {};
+        throw new Error(`coverageThreshold section is not found in ${jestConfigPath}`);
     }
 
     if (!jestConfig.coverageThreshold.global) {
@@ -47,10 +84,11 @@ module.exports = function updateThresholds (jestResults, options) {
         }
     });
 
-    // it's added by require() call
-    delete jestConfig.rootDir;
-
-    writeFileSync(configPath, `module.exports = ${JSON.stringify(jestConfig, null, outputSpaces)};`);
+    updateJestConfigFile({
+        jestConfig,
+        jestConfigPath,
+        outputSpaces
+    });
 
     return jestResults;
 };

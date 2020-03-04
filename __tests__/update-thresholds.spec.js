@@ -1,11 +1,15 @@
 jest.mock('fs');
-const {writeFileSync} = require('fs');
+const {writeFileSync, readFileSync} = require('fs');
 const updateThresholds = require('../src/update-thresholds');
 
 describe('updateThresholds()', () => {
+    const jestConfigRelativePath = '../jest.config.js';
+    const jestConfigAbsolutePath = require.resolve(jestConfigRelativePath);
+
     beforeEach(() => {
         jest.resetModules();
-        jest.mock('../jest.config.js', () => ({}));
+        jest.doMock(jestConfigRelativePath, () => ({coverageThreshold: {}}));
+        readFileSync.mockClear();
         writeFileSync.mockClear();
     });
 
@@ -40,21 +44,24 @@ describe('updateThresholds()', () => {
             }
         };
 
+        readFileSync.mockReturnValue('module.exports = {coverageThreshold: {}};');
         updateThresholds(jestResults, {
-            configPath: '../jest.config.js'
+            configPath: jestConfigRelativePath
         });
-        const configSrc = JSON.stringify({
-            coverageThreshold: {
-                global: {
-                    statements: 27.27,
-                    branches: 21.42,
-                    functions: 50,
-                    lines: 31.57
-                }
+        const thresholdsJson = JSON.stringify({
+            global: {
+                statements: 27.27,
+                branches: 21.42,
+                functions: 50,
+                lines: 31.57
             }
         }, null, 4);
 
-        expect(writeFileSync).toHaveBeenLastCalledWith('../jest.config.js', `module.exports = ${configSrc};`);
+        expect(readFileSync).toHaveBeenCalledWith(jestConfigAbsolutePath, 'utf8');
+        expect(writeFileSync).toHaveBeenCalledWith(
+            jestConfigAbsolutePath,
+            `module.exports = {coverageThreshold: ${thresholdsJson}};`
+        );
     });
 
     it('should update global coverage thresholds', () => {
@@ -79,31 +86,36 @@ describe('updateThresholds()', () => {
                 })
             }
         };
-
-        jest.mock('../jest.config.js', () => ({
-            coverageThreshold: {
-                global: {
-                    statements: 20,
-                    branches: 50,
-                    functions: 40,
-                    lines: 30
-                }
+        const thresholds = {
+            global: {
+                statements: 20,
+                branches: 50,
+                functions: 40,
+                lines: 30
             }
+        };
+
+        jest.doMock(jestConfigRelativePath, () => ({
+            coverageThreshold: thresholds
         }));
+        readFileSync.mockReturnValue(`module.exports = { coverageThreshold: ${JSON.stringify(thresholds)} };`);
+
         updateThresholds(jestResults, {
-            configPath: '../jest.config.js'
+            configPath: jestConfigRelativePath
         });
-        const configSrc = JSON.stringify({
-            coverageThreshold: {
-                global: {
-                    statements: 30,
-                    branches: 50,
-                    functions: 50,
-                    lines: 40
-                }
+        const thresholdsJson = JSON.stringify({
+            global: {
+                statements: 30,
+                branches: 50,
+                functions: 50,
+                lines: 40
             }
         }, null, 4);
 
-        expect(writeFileSync).toHaveBeenLastCalledWith('../jest.config.js', `module.exports = ${configSrc};`);
+        expect(readFileSync).toHaveBeenCalledWith(jestConfigAbsolutePath, 'utf8');
+        expect(writeFileSync).toHaveBeenCalledWith(
+            jestConfigAbsolutePath,
+            `module.exports = { coverageThreshold: ${thresholdsJson} };`
+        );
     });
 });

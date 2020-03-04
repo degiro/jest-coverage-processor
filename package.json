@@ -1,8 +1,12 @@
 {
   "name": "jest-coverage-processor",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "description": "Utils for working with Jest coverage data (auto update thresholds, etc.)",
   "main": "index.js",
+  "files": [
+    "src/**/*",
+    "index.js"
+  ],
   "scripts": {
     "test": "jest --collectCoverage"
   },
